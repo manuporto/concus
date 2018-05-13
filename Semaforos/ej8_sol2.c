@@ -17,10 +17,11 @@ union semun {
 
 static const char* ARCHIVO_SEMAFORO_1 = "/bin/bash";
 static const char* ARCHIVO_SEMAFORO_2 = "/bin/ls";
+static const char* ARCHIVO_SEMAFORO_3 = "/usr/bin/tail";
 static const char* ARCHIVO_SHMEM = "/usr/bin/head";
 static const char LETRA = 'B';
 static const size_t ESCRITORES = 1;
-static const size_t LECTORES = 1;
+static const size_t LECTORES = 3;
 
 // Semaforo
 int sem_init(const char* archivo, const char letra, int init_counter) {
@@ -57,16 +58,19 @@ int shm_init(const char* archivo, const char letra) {
 int main() {
     int sem_room_empty = sem_init(ARCHIVO_SEMAFORO_1, LETRA, 1);
     int sem_mutex = sem_init(ARCHIVO_SEMAFORO_2, LETRA, 1);
+    int sem_molinete = sem_init(ARCHIVO_SEMAFORO_3, LETRA, 1);
     int shm_lectores = shm_init(ARCHIVO_SHMEM, LETRA);
 
     for (size_t i = 0; i < ESCRITORES; i++) {
         if (fork() == 0) {
             pid_t pid = getpid();
 
+            p(sem_molinete);
             p(sem_room_empty);
             printf("[%d] Escribiendo...\n", pid);
+            v(sem_molinete);
             v(sem_room_empty);
-
+            
             printf("[%d] Termine!\n", pid);
             return 0;
         }
@@ -74,10 +78,12 @@ int main() {
 
     for (size_t i = 0; i < LECTORES; i++) {
         if (fork() == 0) {
-            sleep(1);
             pid_t pid = getpid();
-            int lectores;
+            int lectores = 0; // Esto esta mal, hay que inicializarlo una unica vez
             shmat(shm_lectores, &lectores, 0);
+
+            p(sem_molinete);
+            v(sem_molinete);
 
             p(sem_mutex);
             lectores++;
@@ -104,6 +110,7 @@ int main() {
 
     semctl(sem_room_empty, 0, IPC_RMID);
     semctl(sem_mutex, 0, IPC_RMID);
+    semctl(sem_molinete, 0, IPC_RMID);
     shmctl(shm_lectores, IPC_RMID, NULL);
     return 0;
 }
