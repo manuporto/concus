@@ -14,7 +14,6 @@ Escribir un programa en lenguage c o cpp utilizando semaforos de System V para r
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <sys/wait.h>
-#include <errno.h>
 
 union semun {
     int              val;    /* Value for SETVAL */
