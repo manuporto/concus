@@ -63,9 +63,11 @@ int main() {
     for (size_t i = 0; i < ESCRITORES; i++) {
         if (fork() == 0) {
             pid_t pid = getpid();
+            
             p(sem_escritores);
             printf("[%d] Escribiendo..\n", pid);
             v(sem_escritores);
+
             printf("[%d] Termine\n", pid);
             return 0;
         }
