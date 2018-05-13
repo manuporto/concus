@@ -20,8 +20,8 @@ static const char* ARCHIVO_SEMAFORO_2 = "/bin/ls";
 static const char* ARCHIVO_SEMAFORO_3 = "/usr/bin/tail";
 static const char* ARCHIVO_SHMEM = "/usr/bin/head";
 static const char LETRA = 'B';
-static const size_t ESCRITORES = 1;
-static const size_t LECTORES = 3;
+static const size_t ESCRITORES = 2;
+static const size_t LECTORES = 5;
 
 // Semaforo
 int sem_init(const char* archivo, const char letra, int init_counter) {
@@ -70,7 +70,7 @@ int main() {
             printf("[%d] Escribiendo...\n", pid);
             v(sem_molinete);
             v(sem_room_empty);
-            
+
             printf("[%d] Termine!\n", pid);
             return 0;
         }
@@ -79,27 +79,26 @@ int main() {
     for (size_t i = 0; i < LECTORES; i++) {
         if (fork() == 0) {
             pid_t pid = getpid();
-            int lectores = 0; // Esto esta mal, hay que inicializarlo una unica vez
-            shmat(shm_lectores, &lectores, 0);
+            int* lectores = (int*) shmat(shm_lectores, NULL, 0);
 
             p(sem_molinete);
             v(sem_molinete);
 
             p(sem_mutex);
-            lectores++;
-            printf("[%d] #Lectores al entrar: %d\n", pid, lectores);
-            if (lectores == 1) p(sem_room_empty);
+            *lectores = *lectores + 1;
+            printf("[%d] #Lectores al entrar: %d\n", pid, *lectores);
+            if (*lectores == 1) p(sem_room_empty);
             v(sem_mutex);
-
+            
             printf("[%d] Leyendo...\n", pid);
 
             p(sem_mutex);
-            lectores--;
-            printf("[%d] #Lectores al salir: %d\n", pid, lectores);
-            if (lectores == 0) v(sem_room_empty);
+            *lectores = *lectores - 1;
+            printf("[%d] #Lectores al salir: %d\n", pid, *lectores);
+            if (*lectores == 0) v(sem_room_empty);
             v(sem_mutex);
 
-            shmdt(&lectores);
+            shmdt(lectores);
             printf("[%d] Termine!\n", pid);
             return 0;
         }
